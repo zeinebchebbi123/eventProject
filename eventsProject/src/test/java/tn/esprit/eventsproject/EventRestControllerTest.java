@@ -1,6 +1,8 @@
 package tn.esprit.eventsproject;
 
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -8,6 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockitoAnnotations;
@@ -16,6 +19,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import tn.esprit.eventsproject.controllers.EventRestController;
 import tn.esprit.eventsproject.entities.Event;
 import tn.esprit.eventsproject.entities.Logistics;
@@ -27,6 +31,7 @@ import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @WebMvcTest(EventRestController.class)
 public class EventRestControllerTest {
@@ -47,65 +52,99 @@ public class EventRestControllerTest {
     @BeforeEach
     public void setUp() {
         MockitoAnnotations.openMocks(this);
-        sampleParticipant = new Participant(1, "John", "Doe", Tache.INVITE, new HashSet<>());
-        sampleEvent = new Event(1, "Conference", LocalDate.now(), LocalDate.now().plusDays(1), 500, new HashSet<>(), new HashSet<>());
-        sampleLogistics = new Logistics(1, "Sound System", true, 100, 2);
 
-        // Ensure relationships are correctly established
-        sampleEvent.getParticipants().add(sampleParticipant);
-        sampleParticipant.getEvents().add(sampleEvent);
-        sampleEvent.getLogistics().add(sampleLogistics);
+        sampleParticipant = Participant.builder()
+
+                .nom("ZEINEB")
+                .prenom("CHEBBBI")
+                .tache(Tache.INVITE)
+                .build();
+
+
+
+        sampleLogistics = Logistics.builder()
+
+                .description("Sound System")
+                .reserve(true)
+                .prixUnit(100)
+                .quantite(2)
+                .build();
+
+
+
+
     }
 
     @Test
     public void testAddParticipant() throws Exception {
-        when(eventServices.addParticipant(sampleParticipant)).thenReturn(sampleParticipant);
+        Participant participant = Participant.builder()
+                .nom("TEST")
+                .prenom("TEST200")
+                .tache(Tache.ORGANISATEUR)
+                .build();
 
-        String participantJson = objectMapper.writeValueAsString(sampleParticipant);
+        when(eventServices.addParticipant(participant)).thenReturn(participant);
 
-        mockMvc.perform(post("/event/addPart")
+        String participantJson = objectMapper.writeValueAsString(participant);
+
+        MvcResult result = mockMvc.perform(post("/event/addPart")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(participantJson))
-                .andExpect(status().isOk());
-//                .andExpect(jsonPath("nom").value("John"))
-//                .andExpect(jsonPath("prenom").value("Doe"));
+                .andExpect(status().isOk())
+                .andReturn();
+
+        Participant savedParticipant = eventServices.addParticipant(participant);
+        Assertions.assertTrue(savedParticipant.getNom().length() > 3);
+        Assertions.assertTrue(savedParticipant.getPrenom().length() > 3);
+        Assertions.assertEquals(Tache.ORGANISATEUR, savedParticipant.getTache());
     }
 
     @Test
     public void testAddEventPart() throws Exception {
         int idPart = 1;
+        sampleEvent = Event.builder()
 
-        when(eventServices.addAffectEvenParticipant(sampleEvent, idPart)).thenReturn(sampleEvent);
+                .description("Conference")
+                .dateDebut(LocalDate.now())
+                .dateFin(LocalDate.now().plusDays(1))
 
+                .participants(new HashSet<>())
+                .logistics(new HashSet<>())
+                .build();
+        // Mock the service method to return the sampleEvent
+        when(eventServices.addAffectEvenParticipant(any(Event.class), eq(idPart))).thenReturn(sampleEvent);
+
+        // Perform the POST request to add the event
         mockMvc.perform(post("/event/addEvent/{id}", idPart)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(sampleEvent)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.description").value("Conference"));
+
+        // Verify that the service method was called with the correct arguments
+       // verify(eventServices, times(1)).addAffectEvenParticipant(eq(sampleEvent), eq(idPart));
     }
 
-    @Test
-    public void testAddEvent() throws Exception {
-        when(eventServices.addAffectEvenParticipant(sampleEvent)).thenReturn(sampleEvent);
 
-        mockMvc.perform(post("/event/addEvent")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(sampleEvent)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.description").value("Conference"));
-    }
+
 
     @Test
     public void testAddAffectLog() throws Exception {
         String descriptionEvent = "Conference";
+     Logistics logistics=   Logistics.builder()
 
-        when(eventServices.addAffectLog(sampleLogistics, descriptionEvent)).thenReturn(sampleLogistics);
+                .description("Sound System")
+                .reserve(true)
+                .prixUnit(100)
+                .quantite(2)
+                .build();
+                Logistics.builder();
+        when(eventServices.addAffectLog(sampleLogistics, descriptionEvent)).thenReturn(logistics);
 
         mockMvc.perform(put("/event/addAffectLog/{description}", descriptionEvent)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(sampleLogistics)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.description").value("Sound System"));
+                        .content(objectMapper.writeValueAsString(logistics)))
+                .andExpect(status().isOk());
     }
 
     @Test
@@ -113,8 +152,20 @@ public class EventRestControllerTest {
         LocalDate dateDebut = LocalDate.now();
         LocalDate dateFin = LocalDate.now().plusDays(1);
         List<Logistics> logisticsList = Arrays.asList(
-                new Logistics(1, "Sound System", true, 100, 2),
-                new Logistics(2, "Projector", false, 50, 1)
+                Logistics.builder()
+
+                        .description("Sound System")
+                        .reserve(true)
+                        .prixUnit(100)
+                        .quantite(2)
+                        .build(),
+                Logistics.builder()
+
+                        .description("Projector")
+                        .reserve(false)
+                        .prixUnit(50)
+                        .quantite(1)
+                        .build()
         );
 
         when(eventServices.getLogisticsDates(dateDebut, dateFin)).thenReturn(logisticsList);

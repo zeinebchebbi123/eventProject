@@ -6,12 +6,14 @@ import lombok.experimental.FieldDefaults;
 import javax.persistence.*;
 import java.io.Serializable;
 import java.time.LocalDate;
+import java.util.HashSet;
 import java.util.Set;
 
 @Getter
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
+@Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Entity
 public class Event implements Serializable {
@@ -21,10 +23,30 @@ public class Event implements Serializable {
     String description;
     LocalDate dateDebut;
     LocalDate dateFin;
-    float cout;
+
+
+
+
     @ManyToMany(mappedBy = "events")
-    Set<Participant> participants;
-    @OneToMany(fetch = FetchType.EAGER)
-    Set<Logistics> logistics;
+    @Builder.Default  // Ensures that the set is initialized with a default value
+    Set<Participant> participants = new HashSet<>();  // Initialize participants set
+
+    @OneToMany(mappedBy = "event")
+    @Builder.Default  // Ensures that the set is initialized with a default value
+    Set<Logistics> logistics = new HashSet<>();  // Initialize logistics set
+
+    public void addParticipant(Participant participant) {
+        participants.add(participant);
+        participant.getEvents().add(this);  // Ensure bidirectional relationship
+    }
+
+    public void removeParticipant(Participant participant) {
+        participants.remove(participant);
+        participant.getEvents().remove(this);  // Ensure bidirectional relationship
+    }
+
+
+    float cout;
+
 
 }

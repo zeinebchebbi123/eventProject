@@ -15,3 +15,5 @@ PeventsProject/src/test/java/tn/esprit/eventsproject/EventRestControllerTest.jav
 SeventsProject/src/main/java/tn/esprit/eventsproject/services/EventServicesImpl.java,5\4\54df4db79aadb11f4bc34f4cdacf7616b783a362
 E
 eventsProject/pom.xml,7\0\700104ac2aa82df6b465d4573f4a2ecde63a9ba0
+€
+PeventsProject/src/main/java/tn/esprit/eventsproject/services/IEventServices.java,2\3\2356ac6f746522b5f221d9e099f9423dc3a94f05
